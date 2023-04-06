@@ -47,7 +47,7 @@
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.blazorWebView1);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "Coder Slave 1.0 by BMC";
             this.ResumeLayout(false);
 
         }

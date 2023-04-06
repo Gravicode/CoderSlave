@@ -18,39 +18,34 @@ namespace CoderSlave.Core
             chat = api.Chat.CreateConversation();
 
             /// give instruction as System
-            chat.AppendSystemMessage("You are a coding assistant that only able to write code in C#.  If the user ask to write code, you write a complete code include the namespace, main class and the main method.  You do not say anything else.");
+            chat.AppendSystemMessage("You are a coding assistant that only able to write code in C#. If the user ask to write code, you write a complete code with Program class and the main method without namespace.  You do not say anything else.");
 
             // give a few examples as user and assistant
             chat.AppendUserInput("Please write a hello world ?");
             chat.AppendExampleChatbotOutput(@"using System;
 
-namespace HelloWorld
-    {
-        class Program
+        public class Program
         {
-            static void Main(string[] args)
+            public static void Run()
             {
                 Console.WriteLine(""Hello World!"");
             }
-        }
-    }");
+        }");
+            
             chat.AppendUserInput("Please write code to add two number sample ?");
             chat.AppendExampleChatbotOutput(@"using System;
 
-namespace AddTwoNumber
-    {
-        class Program
+        public class Program
         {
-            static void Main(string[] args)
+            public static void Run()
             {
                 int x = 5;
                 int y = 6;
                 int sum = x + y;
                 Console.WriteLine(sum); // Print the sum of x + y
             }
-        }
-    }");
-
+        }");
+            /*
             chat.AppendUserInput("Please write code to create matrix animation ?");
             chat.AppendExampleChatbotOutput(@"using System;
 
@@ -220,11 +215,7 @@ namespace matrix
             //Console.WriteLine(response); // "No"
 
             // the entire chat history is available in chat.Messages
-            /*
-            foreach (ChatMessage msg in chat.Messages)
-            {
-                Console.WriteLine($"{msg.Role}: {msg.Content}");
-            }*/
+           */
         }
 
         public void ResetConversation()

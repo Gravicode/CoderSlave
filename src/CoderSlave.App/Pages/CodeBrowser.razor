@@ -1,0 +1,151 @@
+﻿@page "/code-browser"
+@using System.ComponentModel.DataAnnotations
+@inject CodeGpt CodeGpt
+@inject CodeEvaluator CodeEvaluator
+
+<style>
+    .valid.modified:not([type=checkbox]) {
+        outline: 1px solid #26b050;
+    }
+
+    .invalid {
+        outline: 1px solid red;
+    }
+
+    .validation-message {
+        color: red;
+    }
+</style>
+
+<EditForm EditContext="@_editContext" OnValidSubmit="HandleOnValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div class="form-group row mb-3">
+        <label class="col-md-2 col-form-label">What do you want me to do:</label>
+        <div class="col-md-10">
+            <InputText class="form-control" @bind-Value="UserPrompt.Prompt" />
+            <ValidationMessage For="@(() => UserPrompt.Prompt)" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 text-right">
+            <button type="submit" class="btn btn-success float-right">Ask</button>
+            <button type="button" @onclick="Clear" class="btn btn-warning float-right">Clear</button>
+            <button type="button" @onclick="()=>{GeneratedCode = CleanCode(GeneratedCode);}" class="btn btn-primary float-right">Clean Code</button>
+        </div>
+    </div>
+</EditForm>
+@if (IsLoading)
+{
+    <div class="d-flex align-items-center mt-2 mb-2">
+        <strong>Loading...</strong>
+        <div class="spinner-border ml-auto" role="status" aria-hidden="true"></div>
+    </div>
+}
+<form>
+    <div class="form-group">
+        <label for="codetxt"><b>Generated Code</b></label>
+        <textarea class="form-control" id="codetxt" @bind="GeneratedCode" rows="10"></textarea>
+    </div>
+    <div class="form-group">
+        <Button Color="ButtonColor.Primary" class="mt-2" Disabled="@IsLoading" @onclick="Execute" Outline="true"> Execute Code </Button>
+    </div>
+</form>
+<Toasts class="p-3" Messages="messages" AutoHide="true" Delay="6000" Placement="ToastsPlacement.BottomRight" />
+@if (!string.IsNullOrEmpty(Result))
+{
+    <form>
+        <div class="form-group">
+            <label for="resulttxt"><b>Result</b></label>
+            <textarea readonly class="form-control" id="resulttxt" @bind="Result" rows="10"></textarea>
+        </div>
+    </form>
+}
+
+@code {
+
+    public bool IsLoading { get; set; } = false;
+    private PromptClass UserPrompt = new();
+    private EditContext _editContext;
+    public string GeneratedCode { get; set; }
+    public string Result { get; set; }
+    List<ToastMessage> messages = new List<ToastMessage>();
+
+    private void ShowMessage(string Title, string Message,ToastType toastType = ToastType.Warning) => messages.Add(CreateToastMessage(toastType, Title, Message));
+
+    private ToastMessage CreateToastMessage(ToastType toastType, string Title, string Message)
+    => new ToastMessage
+        {
+            Type = toastType,
+            Title = Title,
+            Message = Message,
+        };
+    async Task Clear()
+    {
+        UserPrompt.Prompt = string.Empty;
+    }
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(UserPrompt);
+        base.OnInitialized();
+    }
+
+    public async Task HandleOnValidSubmit()
+    {
+        IsLoading = true;
+        await Task.Delay(1);
+        GeneratedCode = await CodeGpt.Ask(UserPrompt.Prompt);
+        //GeneratedCode = CleanCode(GeneratedCode);
+        IsLoading = false;
+    }
+    bool IsCodeClean(string InputCode)
+    {
+        var index = InputCode.IndexOf("```csharp");
+        if (index >= 0)
+            return false;
+        index = InputCode.LastIndexOf("```");
+        if (index >= 0)
+            return false;
+        return true;
+    }
+    string CleanCode(string InputCode)
+    {
+        if (string.IsNullOrEmpty(InputCode)) return InputCode;
+        var index = InputCode.IndexOf("```csharp");
+        if (index >= 0)
+            InputCode = InputCode.Remove(0, index + 9);
+        index = InputCode.LastIndexOf("```");
+        if (index >= 0)
+            InputCode = InputCode.Substring(0, index); // or index + 1 to keep slash
+
+        return InputCode;
+    }
+
+    async Task Execute()
+    {
+        if (!IsCodeClean(GeneratedCode))
+        {
+            ShowMessage("Warning", "Please clean the code first");
+            return;
+        }
+        CodeEvaluator.CodeContent = GeneratedCode;
+        var res = CodeEvaluator.RunCode();
+        Result = res.IsSucceed ? res.Result : string.Empty;
+        if (!res.IsSucceed)
+        {
+            ShowMessage("Fail to execute code", res.Result);
+        }
+        else
+        {
+            ShowMessage("Code Execution Success", $"Execution time: {res.ProcessorTime.TotalMilliseconds} ms", ToastType.Success);
+        }
+    }
+    public class PromptClass
+    {
+        [Required]
+        public string Prompt { get; set; }
+
+    }
+}

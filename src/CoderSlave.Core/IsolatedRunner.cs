@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace CoderSlave.Core
 {
-    internal class IsolatedRunner
+    public class IsolatedRunner
     {
         public IsolatedRuntimeHost host { get; set; }
         public IsolatedRuntime runtime { get; set; }

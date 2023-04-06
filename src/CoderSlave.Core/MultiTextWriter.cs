@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CoderSlave.App.Helper
+namespace CoderSlave.Core
 {
     public class MultiTextWriter : TextWriter
     {
